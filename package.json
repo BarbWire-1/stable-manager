@@ -6,5 +6,20 @@
 		"stable-manager": "./bin/stable-manager.js"
 	},
 	"type": "module",
+	"description": "Lightweight tool to manage stable baselines of source files (working <-> stable).",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/BarbWire-1/stable-manager.git"
+	},
+	"keywords": [
+		"stable",
+		"baseline",
+		"devtool",
+		"filesync"
+	],
+	"bugs": {
+		"url": "https://github.com/BarbWire-1/stable-manager/issues"
+	},
+	"homepage": "https://github.com/BarbWire-1/stable-manager#readme",
 	"license": "MIT"
 }
