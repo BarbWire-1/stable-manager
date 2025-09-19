@@ -10,7 +10,8 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import { fileURLToPath } from 'url';
+
+
 
 
 
@@ -18,6 +19,7 @@ const [cmd, fileArg, flag] = process.argv.slice(2);
 const FORCE = flag === '--force';
 
 const rel = f => path.relative(process.cwd(), f);
+
 
 /**
  * Ask user for confirmation (y/n).
@@ -59,33 +61,54 @@ function listStableFiles(dir = process.cwd(), results = []) {
 	}
 	return results;
 }
+/**
+ *
+ * get the current version from package.json
+ */
+function getVersion() {
+	try {
+		const pkg = JSON.parse(
+			fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+		);
+		return pkg.version || "unknown";
+	} catch {
+		return "unknown";
+	}
+}
 
 /**
  * Show help text.
  */
 function showHelp() {
+	const version = getVersion();
+
 	console.log(`
-📘 Stable Manager
+📘 Stable Manager v${version}
 
 Usage:
   stable-manager promote <path/to/file> [--force]   Copy working → stable (creates/updates <file>-stable.ext)
   stable-manager restore <path/to/file> [--force]   Copy stable → working (restores baseline)
-  help                       Show this message
+  stable-manager help                               Show this message
+  stable-manager --version                          Show version
 
 Examples:
   stable-manager promote src/core/snap-core.js
   stable-manager restore src/core/snap-core.js
+
+⚡ --force   Skip confirmations (use with care!)
 `);
 
 	const stables = listStableFiles();
 	if (stables.length) {
-		console.log('📂 Currently tracked stable files:');
-		stables.forEach(f => console.log('  - ' + f));
+		console.log("📂 Currently tracked stable files:");
+		stables.forEach(f => console.log("  - " + f));
 	} else {
 		console.log(
 			"📂 No stable files found yet. Use 'promote <file>' to create one."
 		);
 	}
+
+	console.log("\n💡 Tip: Use 'restore' to undo experiments safely.\n");
 }
 
 async function run() {
