@@ -19,7 +19,7 @@ Useful when experimenting with code but keeping a safe baseline around.
 Clone or install globally:
 
 ```sh
-git clone https://github.com/YOURNAME/stable-manager.git
+git clone https://github.com/BarbWire-1/stable-manager.git
 cd stable-manager
 pnpm link --global    # or npm link
 ```
