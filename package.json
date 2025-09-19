@@ -1,5 +1,5 @@
 {
-	"autor" :"BarbWire-1 aka Barbara Kälin",
+	"author" :"BarbWire-1 aka Barbara Kälin",
 	"name": "stable-manager",
 	"version": "0.1.0",
 	"bin": {

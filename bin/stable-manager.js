@@ -10,9 +10,12 @@
 import fs from "fs";
 import path from "path";
 import readline from "readline";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 
 const [cmd, fileArg, flag] = process.argv.slice(2);
-const FORCE = flag === "--force";
+const FORCE = flag === "--force" || fileArg === "--force";
+const DEEP = flag === "--deep" || fileArg === "--deep";
 
 const rel = (f) => path.relative(process.cwd(), f);
 
@@ -42,14 +45,24 @@ function failNoStable(stable) {
 }
 
 /**
- * Recursively find all *-stable.* and *-backup.* files under cwd.
+ * List *-stable.* and *-backup.* files.
+ * Shallow by default, recursive if recursive=true.
  */
-function listSpecialFiles(dir = process.cwd(), results = []) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+function listSpecialFiles(dir = process.cwd(), results = [], recursive = false) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results; // skip dirs we cannot access
+  }
+
   for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue; // skip hidden
+    if (["node_modules", "dist", "build"].includes(entry.name)) continue; // skip junk dirs
+
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      listSpecialFiles(full, results);
+      if (recursive) listSpecialFiles(full, results, recursive);
     } else if (/(?:-stable|-backup)\.[^.]+$/.test(entry.name)) {
       results.push(rel(full));
     }
@@ -62,9 +75,7 @@ function listSpecialFiles(dir = process.cwd(), results = []) {
  */
 function getVersion() {
   try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
-    );
+    const pkg = require("../package.json");
     return pkg.version || "unknown";
   } catch {
     return "unknown";
@@ -83,6 +94,7 @@ Usage:
   stable-manager promote <path/to/file> [--force]   Copy working → stable (creates/updates <file>-stable.ext)
   stable-manager restore <path/to/file> [--force]   Copy stable → working (restores baseline, saves backup)
   stable-manager clean [--force]                    Remove all *-stable.* and *-backup.* files
+  stable-manager list [dir] [--deep]                Show tracked stable/backup files (safe, no auto-scan)
   stable-manager -h/help                            Show this message
   stable-manager -v/--version                       Show version
 
@@ -90,29 +102,16 @@ Examples:
   stable-manager promote src/core/snap-core.js
   stable-manager restore src/core/snap-core.js
   stable-manager clean
+  stable-manager list ./src --deep
 
 ⚡ --force   Skip confirmations (use with care!)
 `);
-
-  const stables = listSpecialFiles().filter((f) => f.includes("-stable"));
-  if (stables.length) {
-    console.log("📂 Currently tracked stable files:");
-    stables.forEach((f) => console.log("  - " + f));
-  } else {
-    console.log(
-      "📂 No stable files found yet. Use 'promote <file>' to create one."
-    );
-  }
-
-  console.log(
-    "\n💡 Tip: 'restore' creates backups automatically. Use 'clean' to remove all stables and backups.\n"
-  );
 }
 
 async function run() {
   switch (cmd) {
     case "promote": {
-      if (!fileArg) return showHelp();
+      if (!fileArg || fileArg.startsWith("--")) return showHelp();
 
       const WORKING = path.resolve(process.cwd(), fileArg);
       const { dir, name, ext } = path.parse(WORKING);
@@ -140,7 +139,7 @@ async function run() {
     }
 
     case "restore": {
-      if (!fileArg) return showHelp();
+      if (!fileArg || fileArg.startsWith("--")) return showHelp();
 
       const WORKING = path.resolve(process.cwd(), fileArg);
       const { dir, name, ext } = path.parse(WORKING);
@@ -175,7 +174,7 @@ async function run() {
     }
 
     case "clean": {
-      const files = listSpecialFiles();
+      const files = listSpecialFiles(process.cwd(), [], true);
       if (!files.length) {
         console.log("📂 No stable/backup files to remove.");
         break;
@@ -201,6 +200,22 @@ async function run() {
         doClean();
       } else {
         console.log("❌ Aborted.");
+      }
+      break;
+    }
+
+    case "list": {
+      const baseDir =
+        fileArg && !fileArg.startsWith("--")
+          ? path.resolve(process.cwd(), fileArg)
+          : process.cwd();
+
+      const files = listSpecialFiles(baseDir, [], DEEP);
+      if (files.length) {
+        console.log("📂 Tracked stable/backup files:");
+        files.forEach((f) => console.log("  - " + f));
+      } else {
+        console.log("📂 No stable/backup files found in " + rel(baseDir));
       }
       break;
     }
