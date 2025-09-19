@@ -1,24 +1,8 @@
 #!/usr/bin/env node
 /**
- * Snap Core Manager (generalized, no dependencies)
- *
- * Usage:
- *   node snap-core-manager.js promote <file> [--force]
- *   node snap-core-manager.js restore <file> [--force]
- *   node snap-core-manager.js help
- *
- * Example:
- *   node snap-core-manager.js promote src/core/snap-core.js
- *
- * now globally linked
- * "bin": {
- * 			"stable-manager": "./scripts/stable-manager.js"
- * 		},
- * 		make executable
- * 		chmod +x scripts/stable-manager.js
- *
- * 	pnpm link --global
- *  pnpm unlink --global
+ * Stable Manager
+ ** MIT License
+ * Copyright(c) 2025 BarbrWire-1 aka Barbara Kälin
  *
  * @format
  */
@@ -28,7 +12,7 @@ import path from 'path';
 import readline from 'readline';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 
 const [cmd, fileArg, flag] = process.argv.slice(2);
 const FORCE = flag === '--force';
@@ -84,8 +68,8 @@ function showHelp() {
 📘 Stable Manager
 
 Usage:
-  promote <path/to/file> [--force]   Copy working → stable (creates/updates <file>-stable.ext)
-  restore <path/to/file> [--force]   Copy stable → working (restores baseline)
+  stable-manager promote <path/to/file> [--force]   Copy working → stable (creates/updates <file>-stable.ext)
+  stable-manager restore <path/to/file> [--force]   Copy stable → working (restores baseline)
   help                       Show this message
 
 Examples:
@@ -172,4 +156,3 @@ async function run() {
 }
 
 run();
-
