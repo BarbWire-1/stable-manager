@@ -1,9 +1,24 @@
 {
+	"author": "BarbWire-1 aka Barbara Kälin",
 	"name": "stable-manager",
 	"version": "0.1.0",
-	"bin": {
-		"stable-manager": "./bin/stable-manager.js"
+	"description": "Lightweight tool to manage stable baselines of source files (working <-> stable).",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/BarbWire-1/stable-manager.git"
 	},
-	"type": "module",
-	"license": "MIT"
+	"keywords": [
+		"stable",
+		"baseline",
+		"snap-core",
+		"devtool",
+		"filesync"
+	],
+	"bugs": {
+		"url": "https://github.com/BarbWire-1/stable-manager/issues"
+	},
+	"homepage": "https://github.com/BarbWire-1/stable-manager#readme"
+
+
+	
 }
