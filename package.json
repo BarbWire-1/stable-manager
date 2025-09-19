@@ -1,0 +1,9 @@
+{
+	"name": "stable-manager",
+	"version": "0.1.0",
+	"bin": {
+		"stable-manager": "./bin/stable-manager.js"
+	},
+	"type": "module",
+	"license": "MIT"
+}
