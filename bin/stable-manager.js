@@ -11,13 +11,27 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+import { fileURLToPath } from "url";
 
+const require = createRequire(import.meta.url);
 const [cmd, fileArg, flag] = process.argv.slice(2);
 const FORCE = flag === "--force" || fileArg === "--force";
 const DEEP = flag === "--deep" || fileArg === "--deep";
 
-const rel = (f) => path.relative(process.cwd(), f);
+/**
+ * Find project root (nearest package.json), fallback to cwd.
+ */
+function findRoot(startDir = process.cwd()) {
+  let dir = startDir;
+  while (dir !== path.parse(dir).root) {
+    if (fs.existsSync(path.join(dir, "package.json"))) return dir;
+    dir = path.dirname(dir);
+  }
+  return startDir;
+}
+const ROOT = findRoot();
+
+const rel = (f) => path.relative(ROOT, f);
 
 /**
  * Ask user for confirmation (y/n).
@@ -46,19 +60,18 @@ function failNoStable(stable) {
 
 /**
  * List *-stable.* and *-backup.* files.
- * Shallow by default, recursive if recursive=true.
  */
-function listSpecialFiles(dir = process.cwd(), results = [], recursive = false) {
+function listSpecialFiles(dir = ROOT, results = [], recursive = false) {
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
   } catch {
-    return results; // skip dirs we cannot access
+    return results;
   }
 
   for (const entry of entries) {
-    if (entry.name.startsWith(".")) continue; // skip hidden
-    if (["node_modules", "dist", "build"].includes(entry.name)) continue; // skip junk dirs
+    if (entry.name.startsWith(".")) continue;
+    if (["node_modules", "dist", "build"].includes(entry.name)) continue;
 
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -75,7 +88,7 @@ function listSpecialFiles(dir = process.cwd(), results = [], recursive = false) 
  */
 function getVersion() {
   try {
-    const pkg = require("../package.json");
+    const pkg = require(path.join(ROOT, "package.json"));
     return pkg.version || "unknown";
   } catch {
     return "unknown";
@@ -113,7 +126,7 @@ async function run() {
     case "promote": {
       if (!fileArg || fileArg.startsWith("--")) return showHelp();
 
-      const WORKING = path.resolve(process.cwd(), fileArg);
+      const WORKING = path.resolve(ROOT, fileArg);
       const { dir, name, ext } = path.parse(WORKING);
       const STABLE = path.join(dir, `${name}-stable${ext}`);
       const working = fs.readFileSync(WORKING, "utf8");
@@ -141,7 +154,7 @@ async function run() {
     case "restore": {
       if (!fileArg || fileArg.startsWith("--")) return showHelp();
 
-      const WORKING = path.resolve(process.cwd(), fileArg);
+      const WORKING = path.resolve(ROOT, fileArg);
       const { dir, name, ext } = path.parse(WORKING);
       const STABLE = path.join(dir, `${name}-stable${ext}`);
       const BACKUP = path.join(dir, `${name}-backup${ext}`);
@@ -174,7 +187,7 @@ async function run() {
     }
 
     case "clean": {
-      const files = listSpecialFiles(process.cwd(), [], true);
+      const files = listSpecialFiles(ROOT, [], true);
       if (!files.length) {
         console.log("📂 No stable/backup files to remove.");
         break;
@@ -182,7 +195,7 @@ async function run() {
 
       const doClean = () => {
         files.forEach((f) => {
-          fs.unlinkSync(path.resolve(process.cwd(), f));
+          fs.unlinkSync(path.resolve(ROOT, f));
           console.log(`🗑️ Removed: ${f}`);
         });
         console.log("✅ Clean complete.");
@@ -207,8 +220,8 @@ async function run() {
     case "list": {
       const baseDir =
         fileArg && !fileArg.startsWith("--")
-          ? path.resolve(process.cwd(), fileArg)
-          : process.cwd();
+          ? path.resolve(ROOT, fileArg)
+          : ROOT;
 
       const files = listSpecialFiles(baseDir, [], DEEP);
       if (files.length) {
