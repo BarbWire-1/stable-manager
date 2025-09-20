@@ -1,8 +1,9 @@
 
 # 📘 stable-manager
 
-A tiny zero-dependency CLI tool to manage **working vs. stable versions** of your files.
-Useful when experimenting with code but keeping a safe baseline around.
+
+A tiny zero-dependency CLI for safe baselines — or just quick, consistent file copies.
+(promote, restore, clean)
 
 ---
 
@@ -83,7 +84,7 @@ src/core/snap-core-backup.js  → backup of the working file before restore
 
 ## 📂 Tracked files
 
-`stable-manager` can show which `*-stable.*` and `*-backup.*` files exist.  
+`stable-manager` can show which `*-stable.*` and `*-backup.*` files exist.
 By default `list` is safe (non-recursive) — add `--deep` to include subfolders.
 
 ---
