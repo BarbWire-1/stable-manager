@@ -84,17 +84,21 @@ function listSpecialFiles(dir = ROOT, results = [], recursive = false) {
 }
 
 /**
- * get the current version from package.json
+ * get the current version from this package's package.json
  */
 function getVersion() {
   try {
-    const pkg = require(path.join(ROOT, "package.json"));
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    // adjust path if your script lives in ./bin/stable-manager.js
+    const pkgPath = path.resolve(__dirname, "../package.json");
+    const pkg = require(pkgPath);
     return pkg.version || "unknown";
   } catch {
     return "unknown";
   }
 }
 const version = getVersion();
+
 
 /**
  * Show help text.
@@ -124,24 +128,28 @@ Examples:
 async function run() {
   switch (cmd) {
     case "promote": {
-      if (!fileArg || fileArg.startsWith("--")) return showHelp();
+      if (!fileArg || fileArg.startsWith("--")) {
+        console.error("❌ Missing file path for promote.");
+        return showHelp();
+      }
 
       const WORKING = path.resolve(ROOT, fileArg);
+      if (!fs.existsSync(WORKING)) {
+        console.error(`❌ File not found: ${rel(WORKING)}`);
+        process.exit(1);
+      }
+
       const { dir, name, ext } = path.parse(WORKING);
       const STABLE = path.join(dir, `${name}-stable${ext}`);
       const working = fs.readFileSync(WORKING, "utf8");
 
       if (FORCE) {
         fs.writeFileSync(STABLE, working);
-        console.log(
-          `✅ Stable version created/updated (forced): ${rel(STABLE)}`
-        );
+        console.log(`✅ Stable version created/updated (forced): ${rel(STABLE)}`);
         break;
       }
 
-      const ans = await ask(
-        `⚡ Promote ${rel(WORKING)} → ${rel(STABLE)}? (y/n) `
-      );
+      const ans = await ask(`⚡ Promote ${rel(WORKING)} → ${rel(STABLE)}? (y/n) `);
       if (ans === "y" || ans === "yes") {
         fs.writeFileSync(STABLE, working);
         console.log(`✅ Stable version created/updated: ${rel(STABLE)}`);
@@ -152,7 +160,10 @@ async function run() {
     }
 
     case "restore": {
-      if (!fileArg || fileArg.startsWith("--")) return showHelp();
+      if (!fileArg || fileArg.startsWith("--")) {
+        console.error("❌ Missing file path for restore.");
+        return showHelp();
+      }
 
       const WORKING = path.resolve(ROOT, fileArg);
       const { dir, name, ext } = path.parse(WORKING);
@@ -223,6 +234,11 @@ async function run() {
           ? path.resolve(ROOT, fileArg)
           : ROOT;
 
+      if (!fs.existsSync(baseDir)) {
+        console.error(`❌ Directory not found: ${rel(baseDir)}`);
+        process.exit(1);
+      }
+
       const files = listSpecialFiles(baseDir, [], DEEP);
       if (files.length) {
         console.log("📂 Tracked stable/backup files:");
@@ -244,9 +260,14 @@ async function run() {
     case "help":
     case "--help":
     case "-h":
+      showHelp();
+      break;
+
     default:
+      console.error(`❌ Unknown command: ${cmd}`);
       showHelp();
   }
 }
+
 
 run();
